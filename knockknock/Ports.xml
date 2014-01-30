@@ -5,7 +5,47 @@
   <title>Service Name and Transport Protocol Port Number Registry</title>
   <category>Service Names and Transport Protocol Port Numbers</category>
   <updated>2014-01-27</updated>
-  <xref type="rfc" data="rfc6335"/> 
+  <xref type="rfc" data="rfc6335"/>
+  <expert>
+    TCP/UDP: Joe Touch; Eliot Lear, Allison Mankin, Markku Kojo, Kumiko Ono, Martin Stiemerling, Lars Eggert, Alexey Melnikov and Wes Eddy;
+    DCCP: Eddie Kohler; SCTP: Allison Mankin
+  </expert>
+  <note>
+    Service names and port numbers are used to distinguish between different
+    services that run over transport protocols such as TCP, UDP, DCCP, and
+    SCTP.
+
+    Service names are assigned on a first-come, first-served process, as
+    documented in <xref type="rfc" data="rfc6335"/>.
+
+    Port numbers are assigned in various ways, based on three ranges: System
+    Ports (0-1023), User Ports (1024-49151), and the Dynamic and/or Private
+    Ports (49152-65535); the difference uses of these ranges is described in
+    <xref type="rfc" data="rfc6335"/>. System Ports are assigned by IETF
+    process for standards-track protocols, as per <xref type="rfc" data="rfc6335"/>.  User Ports
+    are assigned by IANA using the "IETF Review" process, the "IESG
+    Approval" process, or the "Expert Review" process, as per
+    <xref type="rfc" data="rfc6335"/>.  Dynamic Ports are not assigned.
+
+    The registration procedures for service names and port numbers are
+    described in <xref type="rfc" data="rfc6335"/>.
+
+    Assigned ports both System and User ports SHOULD NOT be used without
+    or prior to IANA registration.
+
+    ************************************************************************
+    * PLEASE NOTE THE FOLLOWING:                                           *
+    *                                                                      *
+    * ASSIGNMENT OF A PORT NUMBER DOES NOT IN ANY WAY IMPLY AN             *
+    * ENDORSEMENT OF AN APPLICATION OR PRODUCT, AND THE FACT THAT NETWORK  *
+    * TRAFFIC IS FLOWING TO OR FROM A REGISTERED PORT DOES NOT MEAN THAT   *
+    * IT IS "GOOD" TRAFFIC, NOR THAT IT NECESSARILY CORRESPONDS TO THE     *
+    * ASSIGNED SERVICE. FIREWALL AND SYSTEM ADMINISTRATORS SHOULD          *
+    * CHOOSE HOW TO CONFIGURE THEIR SYSTEMS BASED ON THEIR KNOWLEDGE OF    *
+    * THE TRAFFIC IN QUESTION, NOT WHETHER THERE IS A PORT NUMBER          *
+    * REGISTERED OR NOT.                                                   *
+    ************************************************************************
+  </note>
   <record>
     <protocol>tcp</protocol>
     <xref type="person" data="Jon_Postel"/>
