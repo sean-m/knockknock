@@ -1,131 +1,168 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Net.Sockets;
-using System.IO;
 using System.Data;
+using System.Net.Sockets;
+using System.Diagnostics;
+using Gnu.Getopt;
+
 
 namespace knockknock
 {
-    class Program
-    {
-        static void Main(string[] args) {
-            #if DEBUG
-            var preColor = Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("** Debug Build **");
-            Console.ForegroundColor = preColor;
-            #endif
+	class Program
+	{
+		static void Main (string[] args) {
+#if DEBUG
+			var preColor = Console.ForegroundColor;
+			Console.ForegroundColor = ConsoleColor.Cyan;
+			Console.WriteLine ("** Debug Build **");
+			Console.ForegroundColor = preColor;
+#endif
+			Getopt g = new Getopt ("knockknock", args, "");
+			//LongOpt l = new LongOpt ("knockknock", 
+			string host = String.Empty;
+			List<int> tcpPorts = new List<int> ();
+			List<int> udpPorts = new List<int> ();
+			Dictionary<int,string> portInfo;
 
-            string host = "localhost";
-            string ports = string.Empty;
-            int startPort = 0;
-            int endPort = 0;
-            bool showPortInfo = false;
-            IList<object[]> portInfo;
+			#region parseArgs
+			//TODO (sean) Use getopt for arguments
+			#if True
+			char c;
+			while ((c = (char)g.getopt ()) != -1) {
 
+				switch (c) {
+					case 'a':
+						break;
 
-            DataSet ds = new DataSet();
-            
-            var fsXml = new StreamReader(System.Reflection.Assembly.GetEntryAssembly().
-                GetManifestResourceStream("knockknock.Ports.xml"));
+				}
 
-            ds.ReadXml(fsXml);
+			}
+			#endif
 
-            DataTable records = ds.Tables["record"];
+			host = args [0];
 
-            IEnumerable<DataRow> query = from record in records.AsEnumerable()
-                                         where record.Field<string>("number") == "80"
-                                         select record;           
+			for (int i = 1; i < args.Length; i++) {
+				if (args [i].ToLower () == "-tcp") {
+					i++;
+					string[] tmp = new string[100];
+					tmp = args [i].Split (new char[] { ',' });
+					for (int j = 0; j < tmp.Length; j++) {
+						if (!String.IsNullOrEmpty (tmp [j]))
+							tcpPorts.Add (Convert.ToInt32 (tmp [j]));
+					}
+				}
 
-#region set options
-            if (args.Length != 0) {
-                try {
-                  host = args[0];
-                  ports = args[1];
+				if (args [i].ToLower () == "-udp") {
+					i++;
+					string[] tmp = new string[100];
+					tmp = args [i].Split (new char[] { ',' });
+					for (int j = 0; j < tmp.Length; j++) {
+						if (!String.IsNullOrEmpty (tmp [j]))
+							udpPorts.Add (Convert.ToInt32 (tmp [j]));
+					}
+				}
 
-                  if (ports.Contains(':')) {
-                      var portRange = ports.Split(new char[] { ':' });
-                      var startPortSuccess = System.Int32.TryParse(portRange[0], out startPort);
-                      var endPortSuccess = System.Int32.TryParse(portRange[1], out endPort);
-                      if (startPortSuccess == false || endPortSuccess == false) { ShowHelp(); }
-                  }
-                }
-                catch {
-                    ShowHelp();
-                }
+				if (args [i].ToLower () == "-i") {
 
-            } else {
-                ShowHelp(0);
-            }
-
-            if (args.Length > 2) {
-                switch( args[2].ToLower()) {
-                    case "-i":
-                        showPortInfo = true;
-                        portInfo = Ports();
-                        break;
-                    case "-info":
-                        showPortInfo = true;
-                        portInfo = Ports();
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-#endregion //set options    
-
-            if (endPort != 0) {
-                var socket = new TcpClient();
-                Console.WriteLine("Checking host: {0}", host);
-                for (int i = startPort; i <= endPort; i++) {
-                    try {
-                        socket.Connect(host, i);
-                        Console.WriteLine("Port {0} open", i.ToString());
-                    }
-                    catch {
-                        Console.WriteLine("Port {0} closed", i.ToString());
-                    }
-                }
-            }
-            else {
-                var singlePort = System.Int32.TryParse(ports, out startPort);
-                if (singlePort) {
-                    var socket = new TcpClient();
-                    Console.WriteLine("Checking host: {0}", host);
-                    try {
-                        socket.Connect(host, startPort);
-                        Console.WriteLine("Port {0} open", startPort.ToString());
-                    }
-                    catch {
-                        Console.WriteLine("Port {0} closed", startPort.ToString());
-                    }
-                }
-            }
-
-            
-            #if DEBUG
-            Console.Read();
-            #endif
-
-        }
-
-        private static IList<object[]> Ports() {
-            var ports = new List<object[]>();
+				}
+			}			
 
 
-            return ports;
-        }
+			#endregion //parseArgs    
 
-        private static void ShowHelp(int exitCode = 0) {
-            Console.WriteLine("");
-            Console.WriteLine("Usage: knockknock target_name <port|[start_port:end_port]>");
-            Console.WriteLine("");
-            System.Environment.Exit(exitCode);
-        }
+			var socket = new TcpClient ();
+			var stopwatch = new Stopwatch ();
+			string heading = String.Format ("{0}                    {1}   {2}  {3} {4}", "Date", "Status", "Port", "Time", "Type");
 
-       
-    }
+
+			if (tcpPorts.Count > 0) {
+				Console.WriteLine (heading);
+				PokePorts (socket, stopwatch, host, tcpPorts, "TCP");
+			}
+
+
+			if (udpPorts.Count > 0) {
+				foreach (var i in udpPorts) {
+
+					try {
+
+						stopwatch.Start ();
+						socket.Connect (host, i);
+						socket.Close ();
+
+						LogOutput (String.Format ("UDP Open   {0,5} {1}", i, stopwatch.ElapsedMilliseconds), LogType.good);
+						stopwatch.Reset ();
+					} catch {
+						LogOutput (String.Format ("UDP Closed {0,5} {1}", i, stopwatch.ElapsedMilliseconds), LogType.bad);
+						stopwatch.Reset ();
+					}
+				}
+
+			}
+
+
+		}
+
+
+		private static void PokePorts (TcpClient socket, Stopwatch stopwatch, string host, List<int> ports, string conntype) {
+			foreach (var i in ports) {
+
+				try {
+					stopwatch.Start ();
+					socket.Connect (host, i);
+					socket.Close ();
+					LogOutput (String.Format ("Open   {0,5} {1,6} {2}", i, stopwatch.ElapsedMilliseconds, conntype), LogType.good);
+					stopwatch.Reset ();
+				} catch {
+					LogOutput (String.Format ("Closed {0,5} {1,6} {2}", i, stopwatch.ElapsedMilliseconds, conntype), LogType.bad);
+					stopwatch.Reset ();
+				}
+			}
+		}
+
+
+		private static void LogOutput (string msg, LogType type) {
+			Console.Write ("[{0}] ", DateTime.UtcNow);
+
+			switch (type) {
+				case LogType.good:
+					{
+						Console.ForegroundColor = ConsoleColor.Green;
+						break;
+					}
+				case LogType.bad:
+					{
+						Console.ForegroundColor = ConsoleColor.Red;
+						break;
+					}
+				case LogType.warn:
+					{
+						Console.ForegroundColor = ConsoleColor.Yellow;
+						break;
+					}
+				default:
+					Console.ResetColor ();
+					break;
+			}
+
+			Console.WriteLine (msg);
+			Console.ResetColor ();
+		}
+
+		private static void ShowHelp (int exitCode = 0) {
+			Console.WriteLine ("");
+			Console.WriteLine ("Usage: knockknock target_name [-tcp 80,443,445...] [-udp 53,161]");
+			Console.WriteLine ("");
+			System.Environment.Exit (exitCode);
+		}
+
+
+		enum LogType {
+			good,
+			bad,
+			warn,
+			info,
+		};
+
+	}
 }
